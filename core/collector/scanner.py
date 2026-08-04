@@ -47,15 +47,39 @@ SOURCE_EXTENSIONS = {
 
 
 CONFIG_FILES = {
+    # JavaScript / Node
     "package.json",
     "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+
+    # Python
     "requirements.txt",
-    "dockerfile",
-    "docker-compose.yml",
+    "pyproject.toml",
+    "poetry.lock",
+    "Pipfile",
+    "Pipfile.lock",
+
+    # Java
     "pom.xml",
     "build.gradle",
-    "pyproject.toml",
+    "build.gradle.kts",
+
+    # Go / Rust
+    "go.mod",
+    "Cargo.toml",
+
+    # Docker
+    "Dockerfile",
+    "docker-compose.yml",
+    "docker-compose.yaml",
+
+    # Configuration
+    ".gitignore",
+    ".editorconfig",
     "tsconfig.json",
+
+    # Frontend configs
     "next.config.js",
     "next.config.ts",
     "next.config.mjs",
@@ -65,6 +89,22 @@ CONFIG_FILES = {
     "tailwind.config.js",
     "tailwind.config.ts",
     "tailwind.config.mjs",
+
+    # Documentation
+    "LICENSE",
+    "LICENSE.md",
+    "LICENCE",
+    "LICENCE.md",
+    "CHANGELOG",
+    "CHANGELOG.md",
+    "HISTORY.md",
+    "CONTRIBUTING",
+    "CONTRIBUTING.md",
+    "SECURITY",
+    "SECURITY.md",
+    "CODE_OF_CONDUCT",
+    "CODE_OF_CONDUCT.md",
+    "CITATION.cff",
 }
 
 
@@ -80,24 +120,42 @@ class RepositoryScanner:
                 continue
 
             relative_path = path.relative_to(repository.local_path)
-
             repository.folder_tree.append(str(relative_path))
 
-            if not path.is_file():
+            if path.is_dir():
+                repository.directories.append(path)
                 continue
 
             repository.total_files += 1
 
-            # Count lines
+            # File size
             try:
-                with open(path, "r", encoding="utf-8", errors="ignore") as file:
-                    repository.total_lines += sum(1 for _ in file)
+                repository.file_sizes[path] = path.stat().st_size
             except Exception:
-                pass
+                repository.file_sizes[path] = 0
+
+            # File content
+            try:
+                content = path.read_text(
+                    encoding="utf-8",
+                    errors="ignore",
+                )
+
+                repository.file_contents[path] = content
+                repository.total_lines += len(content.splitlines())
+
+            except Exception:
+                repository.file_contents[path] = ""
 
             # Source files
             if path.suffix.lower() in SOURCE_EXTENSIONS:
+
                 repository.source_files.append(path)
+
+                repository.files_by_extension.setdefault(
+                    path.suffix.lower(),
+                    []
+                ).append(path)
 
             filename = path.name.lower()
 
@@ -108,22 +166,21 @@ class RepositoryScanner:
             # README detection
             if filename.startswith("readme"):
 
-                # Prefer repository root README
                 if path.parent == repository.local_path:
                     root_readme = path
 
                 elif root_readme is None:
                     root_readme = path
 
-        # Read README once after scanning
+        # Read README once
         if root_readme:
 
+            repository.readme_path = root_readme
+
             try:
-                repository.readme = root_readme.read_text(
-                    encoding="utf-8",
-                    errors="ignore",
-                )
+                repository.readme = repository.file_contents[root_readme]
+
             except Exception:
-                pass
+                repository.readme = ""
 
         return repository
