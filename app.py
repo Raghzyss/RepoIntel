@@ -1,5 +1,13 @@
 import streamlit as st
 
+from ui.styles import inject_theme, load_css
+from ui.header_section import render_header
+from ui.score_section import render_score_section
+from ui.repository_section import render_repository_section
+from ui.classification_section import render_classification_section
+from ui.findings_section import render_findings_section
+from ui.advisor_section import render_advisor_section
+
 from core.collector.collector import RepositoryCollector
 
 from core.extractor.documentation_extractor import DocumentationExtractor
@@ -11,6 +19,9 @@ from core.extractor.project_health_extractor import ProjectHealthExtractor
 
 from core.rules.rule_engine import RuleEngine
 
+from core.llm.project_classifier import ProjectClassifier
+from core.scoring.scorer import Scorer
+
 
 st.set_page_config(
     page_title="RepoIntel",
@@ -18,94 +29,70 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("📦 RepoIntel")
-st.subheader("Deterministic Repository Engineering Review Platform")
 
-url = st.text_input(
-    "GitHub Repository URL",
-    placeholder="https://github.com/username/repository",
-)
+def run_pipeline(repo_url: str):
+    """
+    Executes the complete RepoIntel backend pipeline and returns
+    the objects required by the UI.
+    """
 
-if st.button("Analyze Repository"):
+    with st.spinner("Collecting repository..."):
+        repository = RepositoryCollector().collect(repo_url)
 
-    if not url:
+    with st.spinner("Running extractors..."):
+        repository = DocumentationExtractor().extract(repository)
+        repository = StructureExtractor().extract(repository)
+        repository = CodeExtractor().extract(repository)
+        repository = DependencyExtractor().extract(repository)
+        repository = SecurityExtractor().extract(repository)
+        repository = ProjectHealthExtractor().extract(repository)
+
+    with st.spinner("Running rule engine..."):
+        findings = RuleEngine().evaluate(repository)
+
+    with st.spinner("Classifying repository..."):
+        classification = ProjectClassifier().classify(repository)
+
+    with st.spinner("Calculating engineering score..."):
+        score = Scorer().score(
+            findings=findings,
+            classification=classification,
+        )
+
+    return repository, findings, classification, score
+
+
+def main():
+
+    inject_theme()
+    load_css()
+
+    repo_url, analyze_clicked = render_header()
+
+    if not analyze_clicked:
+        return
+
+    if not repo_url:
         st.warning("Please enter a GitHub repository URL.")
-        st.stop()
+        return
 
     try:
 
-        with st.spinner("Collecting repository..."):
+        repository, findings, classification, score = run_pipeline(repo_url)
 
-            repository = RepositoryCollector().collect(url)
+        render_score_section(score)
 
-        with st.spinner("Running extractors..."):
+        render_repository_section(repository)
 
-            repository = DocumentationExtractor().extract(repository)
-            repository = StructureExtractor().extract(repository)
-            repository = CodeExtractor().extract(repository)
-            repository = DependencyExtractor().extract(repository)
-            repository = SecurityExtractor().extract(repository)
-            repository = ProjectHealthExtractor().extract(repository)
+        render_classification_section(classification)
 
-        with st.spinner("Running rule engine..."):
+        render_findings_section(findings)
 
-            findings = RuleEngine().evaluate(repository)
-
-        st.success("Repository analyzed successfully!")
-
-        st.divider()
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-
-            st.subheader("Repository")
-
-            st.write("**Name:**", repository.name)
-            st.write("**Owner:**", repository.owner)
-            st.write("**Total Files:**", repository.total_files)
-            st.write("**Total Lines:**", repository.total_lines)
-
-        with col2:
-
-            st.subheader("Languages")
-
-            if repository.languages:
-                st.json(repository.languages)
-            else:
-                st.info("No languages detected.")
-
-        st.subheader("Technology Stack")
-
-        if repository.technology_stack:
-            st.json(repository.technology_stack)
-        else:
-            st.info("No technologies detected.")
-
-        st.divider()
-
-        st.subheader(f"Engineering Findings ({len(findings)})")
-
-        if not findings:
-            st.success("🎉 No findings detected.")
-
-        for finding in findings:
-
-            with st.expander(
-                f"[{finding.severity}] {finding.id} - {finding.title}"
-            ):
-
-                st.write(f"**Category:** {finding.category}")
-                st.write(f"**Message:** {finding.message}")
-                st.write(f"**Recommendation:** {finding.recommendation}")
-                st.subheader("Config Files")
-                st.json(
-                    {
-                        name: str(path)
-                        for name, path in repository.config_files.items()
-                    }
-                )
+        render_advisor_section()
 
     except Exception as e:
-
         st.exception(e)
+
+
+if __name__ == "__main__":
+    main()

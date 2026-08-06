@@ -36,13 +36,16 @@ class ProjectHealthExtractor:
 
         metrics = ProjectHealthMetrics()
 
-        configs = repository.config_files
+        config_names = {
+            path.name
+            for path in repository.config_files.values()
+        }
 
         metrics.has_readme = bool(repository.readme)
 
 
         metrics.has_changelog = any(
-            name in configs
+            name in config_names
             for name in (
                 "CHANGELOG.md",
                 "CHANGELOG",
@@ -52,7 +55,7 @@ class ProjectHealthExtractor:
 
 
         metrics.has_code_of_conduct = any(
-            name in configs
+            name in config_names
             for name in (
                 "CODE_OF_CONDUCT.md",
                 "CODE_OF_CONDUCT",
@@ -61,23 +64,23 @@ class ProjectHealthExtractor:
 
 
         metrics.has_gitignore = (
-            ".gitignore" in configs
+            ".gitignore" in config_names
         )
 
         metrics.has_editorconfig = (
-            ".editorconfig" in configs
+            ".editorconfig" in config_names
         )
 
         metrics.has_makefile = (
-            "Makefile" in configs
+            "Makefile" in config_names
         )
 
         metrics.has_dockerfile = (
-            "Dockerfile" in configs
+            "Dockerfile" in config_names
         )
 
         metrics.has_docker_compose = any(
-            name in configs
+            name in config_names
             for name in (
                 "docker-compose.yml",
                 "docker-compose.yaml",
@@ -90,7 +93,7 @@ class ProjectHealthExtractor:
         )
 
         metrics.has_gitlab_ci = (
-            ".gitlab-ci.yml" in configs
+            ".gitlab-ci.yml" in config_names
         )
 
         metrics.has_circle_ci = (
@@ -101,7 +104,7 @@ class ProjectHealthExtractor:
         )
 
         metrics.has_travis_ci = (
-            ".travis.yml" in configs
+            ".travis.yml" in config_names
         )
 
         metrics.test_directory_count = sum(

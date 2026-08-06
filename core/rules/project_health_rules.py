@@ -68,7 +68,10 @@ class ProjectHealthRules:
                 )
             )
 
-        if not metrics.has_dockerfile:
+        if (
+            metrics.total_files > 50
+            and not metrics.has_dockerfile
+        ):
 
             findings.append(
                 Finding(
