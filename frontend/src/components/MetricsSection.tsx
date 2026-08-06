@@ -21,7 +21,10 @@ interface MetricsSectionProps {
 type MetricRecord = Record<string, unknown>;
 
 function formatLabel(key: string) {
-  return key.replaceAll("_", " ");
+  return key
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function isMetricRecord(value: unknown): value is MetricRecord {
@@ -33,7 +36,7 @@ function renderMetricValue(value: unknown): ReactNode {
     return value ? (
       <span className="text-emerald-300">✓ Yes</span>
     ) : (
-      <span className="text-zinc-500">✕ No</span>
+      <span className="text-zinc-300">✕ No</span>
     );
   }
 
@@ -134,7 +137,7 @@ export function MetricsSection({ repository }: MetricsSectionProps) {
                 }))
               }
               aria-expanded={isExpanded}
-              className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-6"
+              className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition-colors hover:bg-white/[0.025] sm:px-6"
             >
               <span className="flex items-center gap-3 text-sm font-medium text-zinc-100">
                 <span className="flex size-8 items-center justify-center rounded-lg border border-blue-300/15 bg-blue-400/[0.07]">
@@ -164,7 +167,7 @@ export function MetricsSection({ repository }: MetricsSectionProps) {
                         {Object.entries(metrics).map(([key, value]) => (
                           <div
                             key={key}
-                            className="min-w-0 rounded-xl border border-white/[0.07] bg-black/15 px-4 py-3"
+                            className="min-w-0 rounded-xl border border-white/[0.07] bg-black/15 px-4 py-3 transition-colors hover:border-white/[0.12] hover:bg-white/[0.035]"
                           >
                             <dt className="text-xs font-medium tracking-[0.1em] text-zinc-500 uppercase">
                               {formatLabel(key)}

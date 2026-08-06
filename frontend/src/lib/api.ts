@@ -24,6 +24,17 @@ export async function analyzeRepository(
   }
 
   if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+
+    if (
+      typeof payload === "object" &&
+      payload !== null &&
+      "detail" in payload &&
+      typeof payload.detail === "string"
+    ) {
+      throw new Error(payload.detail);
+    }
+
     throw new Error(
       `Repository analysis failed with HTTP status ${response.status}.`,
     );
