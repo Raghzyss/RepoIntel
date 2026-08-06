@@ -1,6 +1,43 @@
-venv/
-temp/
-.vscode/
+# =========================
+# Python
+# =========================
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+
+# Environment variables
 .env
+backend/.env
+frontend/.env.local
+
+# Temporary repositories
+backend/temp/
+
+# macOS
+.DS_Store
+
+# =========================
+# Node / Next.js
+# =========================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Build / Cache
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
