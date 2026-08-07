@@ -1,5 +1,7 @@
 """Reusable orchestration for the RepoIntel analysis pipeline."""
 
+import shutil
+
 from core.collector.collector import RepositoryCollector
 from core.extractor.code_extractor import CodeExtractor
 from core.extractor.dependency_extractor import DependencyExtractor
@@ -26,22 +28,28 @@ def run_pipeline(
 ]:
     """Execute the complete existing RepoIntel backend pipeline."""
 
-    repository = RepositoryCollector().collect(repo_url)
+    collector = RepositoryCollector()
 
-    repository = DocumentationExtractor().extract(repository)
-    repository = StructureExtractor().extract(repository)
-    repository = CodeExtractor().extract(repository)
-    repository = DependencyExtractor().extract(repository)
-    repository = SecurityExtractor().extract(repository)
-    repository = ProjectHealthExtractor().extract(repository)
+    try:
+        repository = collector.collect(repo_url)
 
-    findings = RuleEngine().evaluate(repository)
+        repository = DocumentationExtractor().extract(repository)
+        repository = StructureExtractor().extract(repository)
+        repository = CodeExtractor().extract(repository)
+        repository = DependencyExtractor().extract(repository)
+        repository = SecurityExtractor().extract(repository)
+        repository = ProjectHealthExtractor().extract(repository)
 
-    classification = ProjectClassifier().classify(repository)
+        findings = RuleEngine().evaluate(repository)
 
-    score = Scorer().score(
-        findings=findings,
-        classification=classification,
-    )
+        classification = ProjectClassifier().classify(repository)
 
-    return repository, findings, classification, score
+        score = Scorer().score(
+            findings=findings,
+            classification=classification,
+        )
+
+        return repository, findings, classification, score
+    finally:
+        if collector.workspace_path is not None:
+            shutil.rmtree(collector.workspace_path, ignore_errors=True)

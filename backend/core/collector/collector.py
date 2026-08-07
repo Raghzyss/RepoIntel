@@ -1,5 +1,5 @@
 from pathlib import Path
-import shutil
+import tempfile
 
 from git import Repo
 
@@ -13,8 +13,9 @@ from core.collector.technology_detector import TechnologyDetector
 class RepositoryCollector:
 
     def __init__(self):
-        self.temp_dir = Path("temp")
+        self.temp_dir = Path(__file__).resolve().parents[2] / "temp"
         self.temp_dir.mkdir(exist_ok=True)
+        self.workspace_path: Path | None = None
 
     def collect(self, repo_url: str) -> Repository:
 
@@ -24,10 +25,8 @@ class RepositoryCollector:
         repo_name = repo_url.rstrip("/").split("/")[-1]
         owner = repo_url.rstrip("/").split("/")[-2]
 
-        clone_path = self.temp_dir / repo_name
-
-        if clone_path.exists():
-            shutil.rmtree(clone_path)
+        self.workspace_path = Path(tempfile.mkdtemp(dir=self.temp_dir))
+        clone_path = self.workspace_path
 
         Repo.clone_from(repo_url, clone_path)
 
