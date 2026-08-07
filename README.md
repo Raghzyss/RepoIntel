@@ -299,8 +299,6 @@ NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 
 # Screenshots
 
-> Add screenshots here
-
 - Landing Page
 - Dashboard
 - Findings Panel
@@ -327,6 +325,6 @@ This project is licensed under the MIT License.
 
 <div align="center">
 
-Built with ❤️ using FastAPI, Next.js and Google Gemini.
+Built using FastAPI, Next.js and Google Gemini.
 
 </div>
